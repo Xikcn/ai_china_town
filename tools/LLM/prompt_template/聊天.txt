@@ -1,0 +1,17 @@
+agent_chat_v1.txt
+
+Variables:
+!<INPUT 0>! -- 交谈的地点
+!<INPUT 1>! -- 接受聊天的角色
+!<INPUT 2>! -- 发起聊天的角色
+!<INPUT 3>! -- 聊天上下文
+!<INPUT 4>! -- 发起聊天的角色的记忆
+!<INPUT 5>! -- 接受聊天的角色的记忆
+
+<commentblockmarker>###</commentblockmarker>
+角色1: !<INPUT 1>!
+角色2: !<INPUT 2>!
+
+目前聊天的地点是 !<INPUT 0>! ， 他俩之前的聊天记录有 !<INPUT 3>! ，角色1这几天的经历与记忆是 !<INPUT 4>! ， 角色2这几天的经历与记忆是 !<INPUT 5>!
+
+推理: 现在他们会聊些什么？

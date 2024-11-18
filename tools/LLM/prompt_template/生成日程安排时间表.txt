@@ -1,0 +1,17 @@
+generate_hourly_schedule_v2.txt
+
+Variables:
+!<INPUT 0>! -- 人物的生活习惯
+!<INPUT 1>! -- 今天的日期
+
+<commentblockmarker>###</commentblockmarker>
+你是 !<INPUT 0>! 的人 ， 你需要安排 !<INPUT 1>! 也就是今天的所有日程安排
+Hourly schedule format:
+[['睡觉', 480],
+['醒来然后 ...)', 5],
+['喝咖啡', 10],
+...
+['吃晚餐', 60],
+['画画', 180], ...]
+===
+格式是列表 [['日程安排'],['时间'],...]，你没必要考虑我给的例子的时间，这个时间每增1代表1分钟，请帮我合理安排，时间之和不能超过1410

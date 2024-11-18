@@ -1,0 +1,15 @@
+daily_planning_v6.txt
+
+Variables:
+!<INPUT 0>! -- 人物资料
+!<INPUT 1>! -- 今天的日期
+!<INPUT 2>! -- 今天的日程安排
+
+<commentblockmarker>###</commentblockmarker>
+你是 !<INPUT 0>! 的人 ， 你需要设置 !<INPUT 1>! 今天的起床时间
+以下'''包裹的是今天的日程安排,日程安排列表中的表示 [['日程安排'],['时间'],...]，这个时间每增1代表1分钟
+'''
+!<INPUT 2>!
+'''
+===
+请帮选择一个合理的起床时间：{
