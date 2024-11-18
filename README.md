@@ -2,9 +2,19 @@
 
 ## 使用方法
     python cmd_game_easy.py
+
 ###  修改任务资料
 直接修改agents文件夹下对应人物文件夹下1.txt文件即可
 
+
+## 项目演示
+![image](./readme_img/day1.png "第一天")
+
+![image](./readme_img/code.png "代码1")
+
+![image](./readme_img/code2.png "代码2")
+
+![image](./readme_img/ollama.png "ollama")
 
 #### vllm操作
     ```bash
