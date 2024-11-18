@@ -1,3 +1,11 @@
+# AI中国小镇（ollama本地部署版）
+
+## 使用方法
+    python cmd_game_easy.py
+###  修改任务资料
+直接修改agents文件夹下对应人物文件夹下1.txt文件即可
+
+
 #### vllm操作
     ```bash
     python -m vllm.entrypoints.openai.api_server --model /home/xik/models/qwen/qwen2-0___5b --port 8000 --host 172.23.161.199 --tensor-parallel-size 1
