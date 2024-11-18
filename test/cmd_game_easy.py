@@ -48,7 +48,7 @@ class agent_v:
         self.wake = ""
         self.curr_action = ""
         self.curr_action_pronunciatio  = ""
-        self.ziliao = open(f"D:/Python_workspace/rag_qwen/agents/{self.name}/1.txt",encoding="utf-8").readlines()
+        self.ziliao = open(f"../agents/{self.name}/1.txt",encoding="utf-8").readlines()
 
     def getpositon(self):
         return self.position
