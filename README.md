@@ -1,13 +1,20 @@
 # AI中国小镇（ollama本地部署版）
 
 ## 使用方法
-    python cmd_game_easy.py
+#### 命令行方式使用
+    python cmd_game_easy.py     
+
+#### gradio方式使用（推荐）
+    python main.py    
 
 ###  修改任务资料
 直接修改agents文件夹下对应人物文件夹下1.txt文件即可
 
+或者启动gradio页面即可修改
 
 ## 项目演示
+![image](./readme_img/gradio.png "gradio")
+
 ![image](./readme_img/day1.png "第一天")
 
 ![image](./readme_img/code.png "代码1")
