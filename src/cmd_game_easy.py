@@ -1,14 +1,18 @@
-import os
-import gradio as gr
 import math
 import random
 from datetime import datetime, timedelta
+from tools.LLM.run_gpt_prompt import *
 import numpy as np
 from sklearn.cluster import DBSCAN
-from tools.LLM.run_gpt_prompt import *
+
+
+
+
+
+# 简易实现基础版本
 
 # 小镇基本设施地图
-MAP =    [['医院', '咖啡店', '#', '蜜雪冰城', '学校', '#', '#', '小芳家', '#', '#', '火锅店', '#', '#'],
+MAP =     [['医院', '咖啡店', '#', '蜜雪冰城', '学校', '#', '#', '小芳家', '#', '#', '火锅店', '#', '#'],
           ['#', '#', '绿道', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#'],
           ['#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#'],
           ['#', '#', '#', '#', '#', '#', '小明家', '#', '小王家', '#', '#', '#', '#'],
@@ -47,7 +51,7 @@ class agent_v:
         self.wake = ""
         self.curr_action = ""
         self.curr_action_pronunciatio  = ""
-        self.ziliao = open(f"../agents/{self.name}/1.txt",encoding="utf-8").readlines()
+        self.ziliao = open(f"./agents/{self.name}/1.txt",encoding="utf-8").readlines()
 
     def getpositon(self):
         return self.position
@@ -115,9 +119,10 @@ def DBSCAN_chat(agents):
 
 # 时间
 START_TIME =  "2024-11-16-06-30"
-
+# 每个step是十分钟
+min_per_step  = 10
 # 计算时间的表示的函数
-def get_now_time(oldtime,step_num,min_per_step):
+def get_now_time(oldtime,step_num):
     def format_time(dt):
         return dt.strftime("%Y-%m-%d-%H-%M")
     def calculate_new_time(oldtime, step_num):
@@ -215,135 +220,121 @@ def find_current_activity(current_time_str, schedule):
     # 如果当前时间大于所有日程安排的时间，返回最后一个日程安排项
     return ['睡觉','00-00']
 
-# 文件处理部分
-BASE_DIR = '../agents/'
-PARENT_DIRS = [os.path.join(BASE_DIR, folder) for folder in agents_name]
-TARGET_FILENAME = "1.txt"  # 文件名相同
-
-# 获取所有父文件夹中的目标文件路径
-def get_target_files(parent_dirs, target_filename):
-    target_files = {}
-    for folder in parent_dirs:
-        file_path = os.path.join(folder, target_filename)
-        if os.path.exists(file_path):
-            target_files[os.path.basename(folder)] = file_path
-    return target_files
-
-# 读取文件内容
-def read_file(file_path):
-    with open(file_path, "r", encoding="utf-8") as file:
-        return file.read()
-
-# 保存文件内容
-def save_file(file_path, new_content):
-    with open(file_path, "w", encoding="utf-8") as file:
-        file.write(new_content)
-    return f"文件 {os.path.basename(file_path)} 已成功保存！"
-
-# 生成选项页函数
-def generate_tabs(target_files):
-    for folder_name, file_path in target_files.items():
-
-        def save_callback(new_content, file_path=file_path):
-            return save_file(file_path, new_content)
-
-        with gr.Tab(folder_name):
-            file_content = read_file(file_path)
-            textbox = gr.Textbox(
-                label=f"{folder_name}/{TARGET_FILENAME} 内容",
-                value=file_content,
-                lines=20,
-                interactive=True
-            )
-            save_button = gr.Button("保存")
-            save_status = gr.Label()
-
-            save_button.click(save_callback, inputs=[textbox], outputs=save_status)
-
-# 模拟主循环逻辑
-def simulate_town_simulation(steps, min_per_step):
-    output_gradio = []
-
-    agent1 = agent_v("小明", MAP)
-    agent2 = agent_v("小芳", MAP)
-    agent3 = agent_v("小王", MAP)
-    agent1.home = "小明家"
-    agent2.home = "小芳家"
-    agent3.home = "小王家"
-    agents = [agent1, agent2, agent3]
+if __name__ == '__main__':
+    agent1 =  agent_v("小明",MAP)
+    agent2 =  agent_v("小芳",MAP)
+    agent3 =  agent_v("小王",MAP)
+    agent1.home =  "小明家"
+    agent2.home =  "小芳家"
+    agent3.home =  "小王家"
+    agents   =  [agent1,agent2,agent3]
     agent1.goto_scene("小明家")
     agent2.goto_scene("小芳家")
     agent3.goto_scene("小王家")
+    # result  =  DBSCAN_chat(agents)
+
+    # TODO 不考虑用户输入的变量类型
+    steps = int(input("欢迎来到F小镇,请输入执行的step的次数:"))
+    min_per_step = int(input("请设置每步step对于的分钟数:"))
     step = 0
     now_time = START_TIME
 
-    for i in range(steps):
-        if step % int((1440 / min_per_step)) == 0:
+    while True:
+        if  step >= steps:
+            print("已到最大执行步数，结束")
+            break
+        if step%int((1440/min_per_step)) == 0:
             weekday_1 = get_weekday(START_TIME)
-            format_time = format_date_time(START_TIME)
-            output_gradio.append(f'当前时间：{format_time}({weekday_1})')
+            format_time  = format_date_time(START_TIME)
+            print(f'当前时间：{format_time}({weekday_1})')
+            # 获取每日计划
             for i in agents:
-                i.goto_scene(i.home)
-                i.schedule = run_gpt_prompt_generate_hourly_schedule(i.ziliao, now_time[:10])
-                i.wake = run_gpt_prompt_wake_up_hour(i.ziliao, now_time, i.schedule)
-                i.schedule_time = update_schedule(i.wake, i.schedule[1:])
+                # 获取角色坐标
+                agent1.goto_scene("小明家")
+                agent2.goto_scene("小芳家")
+                agent3.goto_scene("小王家")
+
+                # print(i.name)
+                i.schedule = run_gpt_prompt_generate_hourly_schedule(i.ziliao,now_time[:10])
+                # 获取苏醒时间
+                i.wake = run_gpt_prompt_wake_up_hour(i.ziliao,now_time,i.schedule)
+                i.schedule_time =  update_schedule(i.wake, i.schedule[1:])
                 i.curr_action = "睡觉"
                 i.last_action = "睡觉"
-                output_gradio.append(f'{i.name}当前活动:{i.curr_action}(😴💤🛌)---所在地点({i.home})')
+                print(f'{i.name}当前活动:{i.curr_action}(😴💤🛌)---所在地点({i.home})')
+
+
+
         else:
             weekday_2 = get_weekday(now_time)
             format_time = format_date_time(now_time)
-            output_gradio.append(f'当前时间：{format_time}({weekday_2})')
+            print(f'当前时间：{format_time}({weekday_2})')
+            # 根据时间执行计划
+                # 判断是否苏醒，是否还在睡
             for i in agents:
-                if compare_times(now_time[-5:], i.wake):
+                # print(now_time[-5:])
+                # True 左比右早
+                if compare_times(now_time[-5:],i.wake):
+                    # 睡 把角色行动加入数组准备打印
+                    # 还没醒
                     i.curr_action = "睡觉"
                     i.last_action = "睡觉"
                     i.curr_place = i.home
-                    output_gradio.append(f'{i.name}当前活动:{i.curr_action}(😴💤🛌)---所在地点({i.curr_place})')
+                    print(f'{i.name}当前活动:{i.curr_action}(😴💤🛌)---所在地点({i.curr_place})')
+
+
                 else:
-                    i.curr_action = find_current_activity(now_time[-5:], i.schedule_time)[0]
+                    # 没睡 按计划行动 加入数组准备打印
+                    # 计算角色执行计划地点坐标，修改当前角色坐标
+                    i.curr_action=find_current_activity(now_time[-5:],i.schedule_time)[0]
                     if i.last_action != i.curr_action:
-                        i.curr_action_pronunciatio = run_gpt_prompt_pronunciatio(i.curr_action)
+                        i.curr_action_pronunciatio =  run_gpt_prompt_pronunciatio(i.curr_action)
                         i.last_action = i.curr_action
                         i.curr_place = go_map(i.name, i.home, i.curr_place, can_go_place, i.curr_action)
                         i.goto_scene(i.curr_place)
-                        output_gradio.append(
+                        print(
                             f'{i.name}当前活动:{i.curr_action}({i.curr_action_pronunciatio})---所在地点({i.curr_place})')
+
                     else:
-                        output_gradio.append(
+                        print(
                             f'{i.name}当前活动:{i.curr_action}({i.curr_action_pronunciatio})---所在地点({i.curr_place})')
+
+            # 感知周围其他角色决策行动
+                # 主视角查看全地图，获取角色坐标
+                    # 触发聊天
+                        # 反思聊天变成记忆存储
+                    # 行动完成
+            chat_part = DBSCAN_chat(agents)
+            if chat_part  == None:
+                pass
+            else:
+                print(f'{chat_part[0].name}和{chat_part[1].name}在{chat_part[1].curr_place}相遇,他们在进行聊天')
+                chat_part[0].curr_action =  "聊天"
+                chat_part[1].curr_action = "聊天"
+
+                if chat_part[0].curr_place == chat_part[1].curr_place:
+                    print(
+                        f'{chat_part[0].name}当前活动:{chat_part[0].curr_action}---所在地点({chat_part[0].curr_place}旁)')
+                    print(
+                        f'{chat_part[1].name}当前活动:{chat_part[1].curr_action}---所在地点({chat_part[0].curr_place}旁)')
+                else:
+                    print(
+                        f'{chat_part[0].name}当前活动:{chat_part[0].curr_action}---所在地点({chat_part[0].curr_place}和{chat_part[1].curr_place}旁)')
+                    print(
+                        f'{chat_part[1].name}当前活动:{chat_part[1].curr_action}---所在地点({chat_part[0].curr_place}和{chat_part[1].curr_place}旁)')
+                chat_result  = double_agents_chat(
+                    chat_part[0].curr_place,
+                    chat_part[0].name,
+                    chat_part[1].name,
+                    f"{chat_part[0].name}正在{chat_part[0].curr_action},{chat_part[1].name}正在{chat_part[1].curr_action}",
+                    chat_part[0].memory,
+                    chat_part[1].memory)
+                print(f'聊天内容:{chat_result}')
+                chat_part[0].memory = chat_result
+                chat_part[1].memory = chat_result
+
 
         step += 1
-        now_time = get_now_time(now_time, 1,min_per_step)
-        output_gradio.append(f'-' * 150)
-        if step == steps:
-            output_gradio.append("已到最大执行步数，结束")
-        # 在每个循环结束时返回结果
-        yield "\n".join(output_gradio)
+        now_time = get_now_time(now_time,1)
+        print(f'-'*150)
 
-
-
-# Gradio界面
-def launch_gradio_interface():
-    with gr.Blocks() as demo:
-        with gr.Row():
-            with gr.Column():
-                gr.Markdown("### 小镇活动模拟")
-                steps_input = gr.Number(value=10, label="模拟步数")
-                min_per_step_input = gr.Number(value=10, label="每步模拟分钟数")
-                simulation_output = gr.Textbox(label="模拟结果", interactive=False)
-
-                simulate_button = gr.Button("开始模拟")
-                simulate_button.click(simulate_town_simulation,
-                                      inputs=[steps_input, min_per_step_input],
-                                      outputs=[simulation_output])
-
-            with gr.Column():
-                gr.Markdown("### 编辑文件")
-                target_files = get_target_files(PARENT_DIRS, TARGET_FILENAME)
-                generate_tabs(target_files)
-
-    demo.launch()
-
-if __name__ == "__main__":
-    launch_gradio_interface()

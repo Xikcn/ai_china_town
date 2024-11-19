@@ -1,8 +1,11 @@
+import os
 import re
-import sys
-sys.path.append('../')
-
 from tools.LLM.ollama_agent import *
+import sys
+
+# 修改当前工作目录
+os.chdir('../')
+
 
 api_url = "http://127.0.0.1:11434/api"
 ollama_agent = OllamaAgent("qwen2.5:14b", api_url, "agent_chat")
@@ -54,7 +57,7 @@ def run_gpt_prompt_generate_hourly_schedule(persona,now_time):
 
     generate_prompt = OllamaAgent.generate_prompt(
         [persona,now_time],
-        r"D:\Python_workspace\rag_qwen\tools\LLM\prompt_template\生成日程安排时间表.txt")
+        r"./tools/LLM/prompt_template/生成日程安排时间表.txt")
     output = ollama_agent.ollama_safe_generate_response(generate_prompt, "", "你不需要调整，只需要给我输出一个最终的结果，我需要一个标准的数组格式", 3,
                                                         __func_validate, __func_clean_up)
 
@@ -88,7 +91,7 @@ def run_gpt_prompt_wake_up_hour(persona,now_time,hourly_schedule):
         return True
     generate_prompt = OllamaAgent.generate_prompt(
         [persona,now_time,hourly_schedule],
-        r"D:\Python_workspace\rag_qwen\tools\LLM\prompt_template\起床时间.txt")
+        r"./tools/LLM/prompt_template/起床时间.txt")
     output = ollama_agent.ollama_safe_generate_response(generate_prompt, "",
                                                         "只需要给我输出一个最终的结果不需要给我其他任何信息，我需要一个标准的日期格式，比如：07-01（表示早上七点零一分起床）",
                                                         3,
@@ -116,7 +119,7 @@ def run_gpt_prompt_pronunciatio(Action_dec):
     special_instruction = "输出只包含表情符号"  ########
     generate_prompt = OllamaAgent.generate_prompt(
         [Action_dec],
-        r"D:\Python_workspace\rag_qwen\tools\LLM\prompt_template\行为转为图标显示.txt")
+        r"./tools/LLM/prompt_template/行为转为图标显示.txt")
     output = ollama_agent.ollama_safe_generate_response(generate_prompt, example_output, special_instruction, 7,__chat_func_validate,__chat_func_clean_up,'{"output":"🧘️"}')
     return json.loads(output)['output']
 
@@ -134,7 +137,7 @@ def double_agents_chat(maze,agent1_name,agent2_name,curr_context,init_summ_idea,
         return True
 
     generate_prompt = OllamaAgent.generate_prompt(
-        [maze,agent1_name, agent2_name, curr_context, init_summ_idea, target_summ_idea], r"D:\Python_workspace\rag_qwen\tools\LLM\prompt_template\test.txt")
+        [maze,agent1_name, agent2_name, curr_context, init_summ_idea, target_summ_idea], r"./tools/LLM/prompt_template/聊天.txt")
 
     example_output = '[["丹尼", "你好"], ["苏克", "你也是"] ... ]'
     special_instruction = '输出应该是一个列表类型，其中内部列表的形式为[“<名字>”，“<话语>”]。'
@@ -167,7 +170,7 @@ def go_map(agent_name, home , curr_place, can_go, curr_task):
 
     generate_prompt = OllamaAgent.generate_prompt(
         [agent_name,home , curr_place, can_go, curr_task],
-        r"D:\Python_workspace\rag_qwen\tools\LLM\prompt_template\行动需要去的地方.txt")
+        r"./tools/LLM/prompt_template/行动需要去的地方.txt")
 
     output = ollama_agent.ollama_safe_generate_response(generate_prompt, example_output, special_instruction, 3,__chat_func_validate,__chat_func_clean_up)
     pattern = r'"output"\s*:\s*"([^"]+)"'
