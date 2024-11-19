@@ -100,7 +100,7 @@ def DBSCAN_chat(agents):
     # 如果没有符合条件的聚类，返回 None
     if not filtered_clusters:
         return None
-    if random.random() < 0.5:
+    if random.random() < 0.8:
         selected_cluster = random.choice(filtered_clusters)
         return [i[1] for i in selected_cluster]
     else:
@@ -117,7 +117,7 @@ def DBSCAN_chat(agents):
 '''
 
 # 时间
-START_TIME =  "2024-11-16-06-30"
+START_TIME =  "2024-11-13-06-00"
 
 # 计算时间的表示的函数
 def get_now_time(oldtime,step_num,min_per_step):
@@ -160,18 +160,9 @@ def format_date_time(date_str):
 
 # 比较两个时间谁更早
 def compare_times(time_str1, time_str2, time_format="%H-%M"):
-    """
-    比较两个时间字符串，返回哪个时间更早。
-
-    :param time_str1: 第一个时间字符串
-    :param time_str2: 第二个时间字符串
-    :param time_format: 时间字符串的格式，默认为 "%Y-%m-%d-%H-%M"
-    :return: 返回一个字符串，表示哪个时间更早，或者是否相等
-    """
     # 解析时间字符串为 datetime 对象
     time1 = datetime.strptime(time_str1, time_format)
     time2 = datetime.strptime(time_str2, time_format)
-
     # 比较两个时间
     if time1 < time2:
         return True
@@ -181,20 +172,15 @@ def compare_times(time_str1, time_str2, time_format="%H-%M"):
         return True
 
 
-
-
 # 日程安排转为开始时间
 #  TODO 时间有问题，睡觉时间,传入参数[1:]即可解决
 def update_schedule(wake_up_time_str, schedule):
     # 将字符串格式的时间转换为datetime对象
     wake_up_time = datetime.strptime(wake_up_time_str, '%H-%M')
-
     # 初始化当前时间为醒来时间
     current_time = wake_up_time
-
     # 创建一个新的列表来存储更新后的日程安排
     updated_schedule = []
-
     for activity, duration in schedule:
         updated_schedule.append([activity, current_time.strftime('%H-%M')])
         current_time += timedelta(minutes=duration)
@@ -203,18 +189,16 @@ def update_schedule(wake_up_time_str, schedule):
 
 # 确定当前时间agent开展的活动
 def find_current_activity(current_time_str, schedule):
+
     # 将当前时间字符串转换为datetime对象
     current_time = datetime.strptime(current_time_str, '%H-%M')
-
     # 遍历日程安排列表，找到当前时间对应的日程安排项
     for i, (activity, time_str) in enumerate(schedule):
         # 将日程安排的时间字符串转换为datetime对象
         activity_time = datetime.strptime(time_str, '%H-%M')
-
         # 如果当前时间小于等于当前日程安排的时间，则返回当前日程安排项
         if current_time <= activity_time:
             return [activity, time_str]
-
     # 如果当前时间大于所有日程安排的时间，返回最后一个日程安排项
     return ['睡觉','00-00']
 
@@ -281,18 +265,21 @@ def simulate_town_simulation(steps, min_per_step):
     now_time = START_TIME
 
     for i in range(steps):
+        output_gradio.append(f'第 {i+1} 个 step'+'-'*134)
         if step % int((1440 / min_per_step)) == 0:
             weekday_1 = get_weekday(START_TIME)
             format_time = format_date_time(START_TIME)
             output_gradio.append(f'当前时间：{format_time}({weekday_1})')
             for i in agents:
                 i.goto_scene(i.home)
-                i.schedule = run_gpt_prompt_generate_hourly_schedule(i.ziliao, now_time[:10])
-                i.wake = run_gpt_prompt_wake_up_hour(i.ziliao, now_time, i.schedule)
-                i.schedule_time = update_schedule(i.wake, i.schedule[1:])
+                i.schedule = run_gpt_prompt_generate_hourly_schedule(i.ziliao[6], f'{now_time[:10]}-{weekday_1}')
+                i.wake = run_gpt_prompt_wake_up_hour(i.ziliao[6], now_time[:10]+weekday_1, i.schedule[1:])
+                i.schedule_time = update_schedule(i.wake, i.schedule)
+                i.schedule_time = modify_schedule(i.schedule_time,f'{now_time[:10]}-{weekday_1}',i.memory,i.wake)
+                # print("i.schedule_time",i.schedule_time)
                 i.curr_action = "睡觉"
                 i.last_action = "睡觉"
-                output_gradio.append(f'{i.name}当前活动:{i.curr_action}(😴💤🛌)---所在地点({i.home})')
+                output_gradio.append(f'{i.name}当前活动:{i.curr_action}(😴💤)---所在地点({i.home})')
         else:
             weekday_2 = get_weekday(now_time)
             format_time = format_date_time(now_time)
@@ -302,11 +289,14 @@ def simulate_town_simulation(steps, min_per_step):
                     i.curr_action = "睡觉"
                     i.last_action = "睡觉"
                     i.curr_place = i.home
-                    output_gradio.append(f'{i.name}当前活动:{i.curr_action}(😴💤🛌)---所在地点({i.curr_place})')
+                    output_gradio.append(f'{i.name}当前活动:{i.curr_action}(😴💤)---所在地点({i.curr_place})')
                 else:
-                    i.curr_action = find_current_activity(now_time[-5:], i.schedule_time)[0]
+                    if type(i.schedule_time) in [list]:
+                        i.curr_action = find_current_activity(now_time[-5:], i.schedule_time)[0]
+                    else:
+                        pass
                     if i.last_action != i.curr_action:
-                        i.curr_action_pronunciatio = run_gpt_prompt_pronunciatio(i.curr_action)
+                        i.curr_action_pronunciatio = run_gpt_prompt_pronunciatio(i.curr_action)[:2]
                         i.last_action = i.curr_action
                         i.curr_place = go_map(i.name, i.home, i.curr_place, can_go_place, i.curr_action)
                         i.goto_scene(i.curr_place)
@@ -345,10 +335,13 @@ def simulate_town_simulation(steps, min_per_step):
                     chat_part[1].name,
                     f"{chat_part[0].name}正在{chat_part[0].curr_action},{chat_part[1].name}正在{chat_part[1].curr_action}",
                     chat_part[0].memory,
-                    chat_part[1].memory)
+                    chat_part[1].memory,
+                    f'{now_time[:10]}-{weekday_2}')
                 output_gradio.append(f'聊天内容:{chat_result}')
-                chat_part[0].memory = chat_result
-                chat_part[1].memory = chat_result
+                chat_summarize0 = summarize(chat_result,f'{now_time[:10]}-{weekday_2}',chat_part[0].name)
+                chat_summarize1 = summarize(chat_result,f'{now_time[:10]}-{weekday_2}',chat_part[1].name)
+                chat_part[0].memory = chat_summarize0
+                chat_part[1].memory = chat_summarize1
 
 
         step += 1

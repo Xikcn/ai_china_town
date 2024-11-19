@@ -1,0 +1,12 @@
+generate_hourly_schedule_v2.txt
+
+Variables:
+!<INPUT 0>! -- 聊天记录
+!<INPUT 1>! -- 当前时间
+!<INPUT 2>! -- 主角名
+
+<commentblockmarker>###</commentblockmarker>
+
+今天是 !<INPUT 1>! ， !<INPUT 0>! 这是今天我和其他角色的聊天记录的聊天记录 ，我是 !<INPUT 2>!
+请你根据 这些条件 ，总结一下 聊天内容，如果有未来需要做的事情或当前需要做的事情请帮我着重提醒
+总结记忆：{
