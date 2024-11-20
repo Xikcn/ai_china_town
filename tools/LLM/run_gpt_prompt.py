@@ -34,7 +34,7 @@ def run_gpt_prompt_generate_hourly_schedule(persona,now_time):
     generate_prompt = OllamaAgent.generate_prompt(
         [persona,now_time],
         r"./tools/LLM/prompt_template/生成日程安排时间表.txt")
-    output = ollama_agent.ollama_safe_generate_response(generate_prompt, "", "你不需要调整，只需要给我输出一个最终的结果，我需要一个标准的数组格式", 3,
+    output = ollama_agent.ollama_safe_generate_response(generate_prompt, "", "你不需要调整，只需要给我输出一个最终的结果，我需要一个标准的数组格式", 5,
                                                         __func_validate, __func_clean_up)
     # print("run_gpt_prompt_generate_hourly_schedule",output)
     if "json" in output:
@@ -98,21 +98,24 @@ def run_gpt_prompt_pronunciatio(Action_dec):
     generate_prompt = OllamaAgent.generate_prompt(
         [Action_dec],
         r"./tools/LLM/prompt_template/行为转为图标显示.txt")
-    output = ollama_agent.ollama_safe_generate_response(generate_prompt, example_output, special_instruction, 7,__chat_func_validate,__chat_func_clean_up,'{"output":"🧘️"}')
+    output = ollama_agent.ollama_safe_generate_response(generate_prompt, example_output, special_instruction, 5,__chat_func_validate,__chat_func_clean_up,'{"output":"🧘️"}')
     return json.loads(output)['output']
 
 
 # 两个智能体间的对话
 def double_agents_chat(maze,agent1_name,agent2_name,curr_context,init_summ_idea,target_summ_idea,now_time):
-    def __chat_func_clean_up(gpt_response):  
-        return gpt_response
+    def __chat_func_clean_up(gpt_response):
+        try:
+            output_value = json.loads(gpt_response)["output"]
+        except:
+            output_value = ""
+        return output_value
 
     def __chat_func_validate(gpt_response):
-        print(type(gpt_response))
+        # print(type(gpt_response))
         try:
             output_value = json.loads(gpt_response)["output"]
             __chat_func_clean_up(output_value)
-
         except:
             return False
         return True
@@ -123,7 +126,7 @@ def double_agents_chat(maze,agent1_name,agent2_name,curr_context,init_summ_idea,
     example_output = '[["丹尼", "你好"], ["苏克", "你也是"] ... ]'
     special_instruction = '输出应该是一个列表类型，其中内部列表的形式为[“<名字>”，“<话语>”]。'
 
-    output = ollama_agent.ollama_safe_generate_response(generate_prompt, example_output, special_instruction, 3,__chat_func_validate,__chat_func_clean_up)
+    output = ollama_agent.ollama_safe_generate_response(generate_prompt, example_output, special_instruction, 5,__chat_func_validate,__chat_func_clean_up,'''{"output":"[['小明', '明天去肯德基吗'], ['小芳', '好的，每天上午十一点在肯德基集合']]"}''')
     output = json.loads(output)["output"]
     return output
 
@@ -163,7 +166,6 @@ def go_map(agent_name, home , curr_place, can_go, curr_task):
 # 思考改变日程安排
 def modify_schedule(old_schedule,now_time,memory,wake_time):
     def __func_clean_up(gpt_response):
-
         cr = gpt_response
         return cr
 
@@ -179,7 +181,7 @@ def modify_schedule(old_schedule,now_time,memory,wake_time):
     generate_prompt = OllamaAgent.generate_prompt(
         [old_schedule,now_time,memory,wake_time],
         r"D:\Python_workspace\rag_qwen\tools\LLM\prompt_template\细化每日安排时间表.txt")
-    output = ollama_agent.ollama_safe_generate_response(generate_prompt, "", "你不需要调整，只需要给我输出一个最终的结果，我需要一个标准的数组格式", 3,
+    output = ollama_agent.ollama_safe_generate_response(generate_prompt, "", "你不需要调整，只需要给我输出一个最终的结果，我需要一个标准的数组格式", 10,
                                                         __func_validate, __func_clean_up)
     # print("modify_schedule",output)
     if "json" in output:
@@ -211,7 +213,7 @@ def summarize(memory,now_time,name):
     output = ollama_agent.ollama_safe_generate_response(generate_prompt, example_output, special_instruction, 3,
                                                    __chat_func_validate, __chat_func_clean_up)
 
-        # print(output)
+    # print('summarize',output)
     return output
 
 

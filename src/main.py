@@ -7,7 +7,7 @@ from sklearn.cluster import DBSCAN
 from tools.LLM.run_gpt_prompt import *
 import os
 
-print(os.getcwd())
+# print(os.getcwd())
 
 
 # 小镇基本设施地图
@@ -189,7 +189,7 @@ def update_schedule(wake_up_time_str, schedule):
 
 # 确定当前时间agent开展的活动
 def find_current_activity(current_time_str, schedule):
-
+    print("now_time[-5:]",current_time_str)
     # 将当前时间字符串转换为datetime对象
     current_time = datetime.strptime(current_time_str, '%H-%M')
     # 遍历日程安排列表，找到当前时间对应的日程安排项
@@ -199,8 +199,8 @@ def find_current_activity(current_time_str, schedule):
         # 如果当前时间小于等于当前日程安排的时间，则返回当前日程安排项
         if current_time <= activity_time:
             return [activity, time_str]
-    # 如果当前时间大于所有日程安排的时间，返回最后一个日程安排项
-    return ['睡觉','00-00']
+    # 如果当前时间大于所有日程安排的时间，返回睡觉
+    return ['睡觉',current_time_str]
 
 # 文件处理部分
 BASE_DIR = './agents/'
@@ -265,18 +265,22 @@ def simulate_town_simulation(steps, min_per_step):
     now_time = START_TIME
 
     for i in range(steps):
-        output_gradio.append(f'第 {i+1} 个 step'+'-'*134)
+        output_gradio.append(f'第 {i+1} 个 step'.center(140,'-') )
         if step % int((1440 / min_per_step)) == 0:
             weekday_1 = get_weekday(START_TIME)
             format_time = format_date_time(START_TIME)
             output_gradio.append(f'当前时间：{format_time}({weekday_1})')
             for i in agents:
+                if i.memory != "":
+                    # print(i.name, i.memory)
+                    i.memory = summarize(i.memory, f'{now_time[:10]}-{weekday_1}', i.name)
                 i.goto_scene(i.home)
                 i.schedule = run_gpt_prompt_generate_hourly_schedule(i.ziliao[6], f'{now_time[:10]}-{weekday_1}')
                 i.wake = run_gpt_prompt_wake_up_hour(i.ziliao[6], now_time[:10]+weekday_1, i.schedule[1:])
-                i.schedule_time = update_schedule(i.wake, i.schedule)
+                print("i.wake", i.wake)
+                i.schedule_time = update_schedule(i.wake, i.schedule[1:])
                 i.schedule_time = modify_schedule(i.schedule_time,f'{now_time[:10]}-{weekday_1}',i.memory,i.wake)
-                # print("i.schedule_time",i.schedule_time)
+                print("i.schedule_time",i.schedule_time)
                 i.curr_action = "睡觉"
                 i.last_action = "睡觉"
                 output_gradio.append(f'{i.name}当前活动:{i.curr_action}(😴💤)---所在地点({i.home})')
@@ -338,15 +342,18 @@ def simulate_town_simulation(steps, min_per_step):
                     chat_part[1].memory,
                     f'{now_time[:10]}-{weekday_2}')
                 output_gradio.append(f'聊天内容:{chat_result}')
-                chat_summarize0 = summarize(chat_result,f'{now_time[:10]}-{weekday_2}',chat_part[0].name)
-                chat_summarize1 = summarize(chat_result,f'{now_time[:10]}-{weekday_2}',chat_part[1].name)
-                chat_part[0].memory = chat_summarize0
-                chat_part[1].memory = chat_summarize1
+                # print(343, type(chat_result))
+                # print(344, type( chat_part[0].memory))
+                # print(345, chat_result)
+                chat_part[0].memory += json.dumps(chat_result, ensure_ascii=False)
+                chat_part[1].memory += json.dumps(chat_result, ensure_ascii=False)
+
+
 
 
         step += 1
         now_time = get_now_time(now_time, 1,min_per_step)
-        output_gradio.append(f'-' * 150)
+        output_gradio.append(f''.center(140,'-') )
         if step == steps:
             output_gradio.append("已到最大执行步数，结束")
         # 在每个循环结束时返回结果
@@ -360,8 +367,8 @@ def launch_gradio_interface():
         with gr.Row():
             with gr.Column():
                 gr.Markdown("### 小镇活动模拟")
-                steps_input = gr.Number(value=10, label="模拟步数")
-                min_per_step_input = gr.Number(value=10, label="每步模拟分钟数")
+                steps_input = gr.Number(value=60, label="模拟步数")
+                min_per_step_input = gr.Number(value=30, label="每步模拟分钟数")
                 simulation_output = gr.Textbox(label="模拟结果", interactive=False)
 
                 simulate_button = gr.Button("开始模拟")
@@ -378,3 +385,4 @@ def launch_gradio_interface():
 
 if __name__ == "__main__":
     launch_gradio_interface()
+    # TODO 总结一天的，不要覆盖聊天记录而是+=

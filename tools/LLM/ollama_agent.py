@@ -34,7 +34,7 @@ class OllamaAgent:
                 if func_validate(curr_gpt_response):
                     return curr_gpt_response
             except:
-                continue
+                pass
         return fail_safe
 
 
