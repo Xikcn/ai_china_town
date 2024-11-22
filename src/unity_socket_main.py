@@ -6,19 +6,82 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 from tools.LLM.run_gpt_prompt import *
 import os
+import socket
 
-# print(os.getcwd())
 
 
-# 小镇基本设施地图
-MAP =    [['医院', '咖啡店', '#', '蜜雪冰城', '学校', '#', '#', '小芳家', '#', '#', '火锅店', '#', '#'],
-          ['#', '#', '绿道', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#'],
-          ['#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#'],
-          ['#', '#', '#', '#', '#', '#', '小明家', '#', '小王家', '#', '#', '#', '#'],
-          ['#', '#', '肯德基', '乡村基', '#', '#', '#', '#', '#', '#', '#', '健身房', '#'],
-          ['电影院', '#', '#', '#', '#', '商场', '#', '#', '#', '#', '#', '#', '#'],
-          ['#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#'],
-          ['#', '#', '#', '#', '#', '#', '#', '海边', '#', '#', '#', '#', '#']]
+def send_move_command(ip, port, object_positions):
+    """
+    发送多个角色的目标坐标到Unity。
+    object_positions: [(object_id, x, y), (object_id, x, y), ...]
+    """
+    try:
+        # 创建 socket 客户端
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect((ip, port))
+
+        # 构造移动命令，支持多个角色
+        command = "MOVE:" + ";".join([f"{object_id},{x},{y}" for object_id, x, y in object_positions])
+        client.sendall(command.encode('utf-8'))
+        print(f"Sent: {command}")
+
+        # 关闭连接
+        client.close()
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+def send_speak_command(ip, port, object_id, message):
+    """
+    发送角色说话命令到Unity。
+    """
+    try:
+        # 创建 socket 客户端
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect((ip, port))
+
+        # 构造说话命令
+        command = f"SPEAK:{object_id}:{message}"
+        client.sendall(command.encode('utf-8'))
+        print(f"Sent: {command}")
+
+        # 关闭连接
+        client.close()
+    except Exception as e:
+        print(f"Error: {e}")
+
+unity_ip = "127.0.0.1"  # Unity 运行的 IP 地址
+unity_port = 12345  # Unity 使用的端口号
+
+
+
+# # 小镇基本设施地图
+# MAP =    [['医院', '咖啡店', '#', '蜜雪冰城', '学校', '#', '#', '小芳家', '#', '#', '火锅店', '#', '#'],
+#           ['#', '#', '绿道', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#'],
+#           ['#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#'],
+#           ['#', '#', '#', '#', '#', '#', '小明家', '#', '小王家', '#', '#', '#', '#'],
+#           ['#', '#', '肯德基', '乡村基', '#', '#', '#', '#', '#', '#', '#', '健身房', '#'],
+#           ['电影院', '#', '#', '#', '#', '商场', '#', '#', '#', '#', '#', '#', '#'],
+#           ['#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#'],
+#           ['#', '#', '#', '#', '#', '#', '#', '海边', '#', '#', '#', '#', '#']]
+
+MAP_plus = {
+    '医院':(-1.78,0),
+    '咖啡店':(8.6,0),
+    '蜜雪冰城':(20.13,-0.44),
+    '学校':(31.35,-1.52),
+    '小芳家':(64.79,0.99),
+    '火锅店':(76.44,0.99),
+    '绿道':(18.36,-13.07),
+    '小明家':(49.09,-15.4),
+    '小王家':(76.23,-16.25),
+    '肯德基':(29.5,-30.81),
+    '乡村基':(43.65,-30.81),
+    '健身房':(82.9,-27.52),
+    '电影院':(-1.32,-18.5),
+    '商场':(64.97,-36.24),
+    '海边':(34.14,-47.97)
+}
 
 can_go_place = ['医院','咖啡店','蜜雪冰城', '学校','小芳家', '火锅店','绿道','小明家', '小王家','肯德基', '乡村基', '健身房','电影院', '商场','海边' ]
 
@@ -33,7 +96,7 @@ objs = {
 world_rule = ""
 
 # 角色
-agents_name =  ["小明","小王","小芳"]
+agents_name =  ["小明","小芳","小王"]
 
 class agent_v:
     def __init__(self,name,MAP):
@@ -57,12 +120,8 @@ class agent_v:
 
 
     def goto_scene(self,scene_name):
-        for row_index, row in enumerate(self.MAP):
-            for col_index, cell in enumerate(row):
-                if cell == scene_name:
-                    self.position = (row_index,col_index)
-                    self.curr_place =  scene_name
-        return None  # 如果没有找到，返回 None
+        self.position = add_random_noise(scene_name,self.MAP)
+        self.curr_place =  scene_name
 
     def Is_nearby(self,position):
         x1=self.position[0]
@@ -76,6 +135,21 @@ class agent_v:
         return manhattan_distance == 1 or euclidean_distance == 1 or euclidean_distance == math.sqrt(2)
 
 
+# 给场景增加噪声
+def add_random_noise(location, map_dict):
+    # 获取原始坐标
+    original_coords = map_dict.get(location, None)
+
+    if original_coords is None:
+        return "Location not found in the dictionary."
+
+    # 为每个坐标添加随机噪声
+    x, y = original_coords
+    x_with_noise = x + random.uniform(-3, 3)
+    y_with_noise = y + random.uniform(-3, 3)
+
+    return (x_with_noise, y_with_noise)
+
 
 # DBSCAN聚类方式感知聊天
 def DBSCAN_chat(agents):
@@ -86,7 +160,7 @@ def DBSCAN_chat(agents):
         points_list.append(agent.getpositon())
         agent_list.append(agent)
     points_array = np.array(points_list)
-    dbscan = DBSCAN(eps=1.5, min_samples=1)
+    dbscan = DBSCAN(eps=4.5, min_samples=1)
     labels = dbscan.fit_predict(points_array)
 
     for point, label,agent in zip(points_list, labels,agent_list):
@@ -251,9 +325,9 @@ def generate_tabs(target_files):
 def simulate_town_simulation(steps, min_per_step):
     output_gradio = []
 
-    agent1 = agent_v("小明", MAP)
-    agent2 = agent_v("小芳", MAP)
-    agent3 = agent_v("小王", MAP)
+    agent1 = agent_v("小明", MAP_plus)
+    agent2 = agent_v("小芳", MAP_plus)
+    agent3 = agent_v("小王", MAP_plus)
     agent1.home = "小明家"
     agent2.home = "小芳家"
     agent3.home = "小王家"
@@ -278,12 +352,14 @@ def simulate_town_simulation(steps, min_per_step):
                 i.goto_scene(i.home)
                 i.schedule = run_gpt_prompt_generate_hourly_schedule(i.ziliao[6], f'{now_time[:10]}-{weekday_1}')
                 i.wake = run_gpt_prompt_wake_up_hour(i.ziliao[6], now_time[:10]+weekday_1, i.schedule[1:])
-                print("i.wake", i.wake)
+                # print("i.wake", i.wake)
                 i.schedule_time = update_schedule(i.wake, i.schedule[1:])
                 i.schedule_time = modify_schedule(i.schedule_time,f'{now_time[:10]}-{weekday_1}',i.memory,i.wake)
                 print("i.schedule_time",i.schedule_time)
                 i.curr_action = "睡觉"
                 i.last_action = "睡觉"
+                # TODO
+                send_speak_command(unity_ip, unity_port, int(agents_name.index(i.name)), i.curr_action)
                 output_gradio.append(f'{i.name}当前活动:{i.curr_action}(😴💤)---所在地点({i.home})')
         else:
             weekday_2 = get_weekday(now_time)
@@ -305,11 +381,21 @@ def simulate_town_simulation(steps, min_per_step):
                         i.last_action = i.curr_action
                         i.curr_place = go_map(i.name, i.home, i.curr_place, can_go_place, i.curr_action)
                         i.goto_scene(i.curr_place)
+                        # TODO
+                        send_speak_command(unity_ip, unity_port, int(agents_name.index(i.name)), i.curr_action)
                         output_gradio.append(
                             f'{i.name}当前活动:{i.curr_action}({i.curr_action_pronunciatio})---所在地点({i.curr_place})')
                     else:
+                        # TODO
+                        send_speak_command(unity_ip, unity_port, int(agents_name.index(i.name)),i.curr_action)
                         output_gradio.append(
                             f'{i.name}当前活动:{i.curr_action}({i.curr_action_pronunciatio})---所在地点({i.curr_place})')
+
+            object_positions = []
+            for l in agents:
+                object_positions.append((int(agents_name.index(l.name)), float(l.position[0]), float(l.position[1])))
+            send_move_command(unity_ip, unity_port, object_positions)
+
             # 感知周围其他角色决策行动
                 # 主视角查看全地图，获取角色坐标
                     # 触发聊天
@@ -343,11 +429,34 @@ def simulate_town_simulation(steps, min_per_step):
                     chat_part[1].memory,
                     f'{now_time[:10]}-{weekday_2}')
                 output_gradio.append(f'聊天内容:{chat_result}')
+
+                # 初始化一个空列表用于存储所有对话
+                all_dialogues = []
+                # 将所有对话按顺序存入新的列表
+                for dialogue in chat_result:
+                    all_dialogues.append(dialogue)
+                # 初始化两个空字符串用于存储各自的内容
+                xiaoming_dialogue = ""
+                xiaofang_dialogue = ""
+                # 初始化一个全局计数器
+                global_count = 1
+                # 遍历所有对话，根据名字将内容添加到对应的字符串中，并加上序号
+                for dialogue in all_dialogues:
+                    if dialogue[0] == chat_part[0].name:
+                        xiaoming_dialogue += f"{global_count}. {dialogue[1]}\n"
+                    elif dialogue[0] == chat_part[1].name:
+                        xiaofang_dialogue += f"{global_count}. {dialogue[1]}\n"
+                    global_count += 1
+
+                send_speak_command(unity_ip, unity_port, int(agents_name.index(chat_part[0].name)),xiaoming_dialogue)
+                send_speak_command(unity_ip, unity_port, int(agents_name.index(chat_part[1].name)), xiaofang_dialogue)
+
                 # print(343, type(chat_result))
                 # print(344, type( chat_part[0].memory))
                 # print(345, chat_result)
                 chat_part[0].memory += json.dumps(chat_result, ensure_ascii=False)
                 chat_part[1].memory += json.dumps(chat_result, ensure_ascii=False)
+
 
 
 
