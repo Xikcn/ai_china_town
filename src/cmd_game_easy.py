@@ -210,6 +210,7 @@ def find_current_activity(current_time_str, schedule):
 
     # 遍历日程安排列表，找到当前时间对应的日程安排项
     for i, (activity, time_str) in enumerate(schedule):
+        time_str = time_str.replace(':', '-')
         # 将日程安排的时间字符串转换为datetime对象
         activity_time = datetime.strptime(time_str, '%H-%M')
 

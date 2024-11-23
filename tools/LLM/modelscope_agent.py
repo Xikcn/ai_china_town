@@ -2,18 +2,26 @@ import json
 import time
 import requests
 import warnings
-
-
+import torch
+from modelscope import AutoModelForCausalLM, AutoTokenizer
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(device)
 
 warnings.filterwarnings('ignore')
 import sys
 sys.path.append('../')
 
-class OllamaAgent:
-    def __init__(self, model,baseurl,user_id):
-        self.model = model
-        self.baseurl = baseurl
-        self.user_id = user_id
+class ModaAgent:
+    def __init__(self):
+        self.model_name = "qwen/Qwen2.5-3B-Instruct"
+
+        self.model = AutoModelForCausalLM.from_pretrained(
+            self.model_name,
+            torch_dtype="auto",
+            device_map="auto"
+        ).to(device)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+
 
     def temp_sleep(self,seconds=0.1):
         time.sleep(seconds)
@@ -23,7 +31,7 @@ class OllamaAgent:
         prompt += f"Output the response to the prompt above in json. {special_instruction}\n"
         prompt += "Example output json:\n"
         prompt += '{"output": "' + str(example_output) + '"}'
-
+        # print("prompt",prompt)
         for i in range(repeat):
             # print(f"repeat:{i}")
             try:
@@ -33,27 +41,40 @@ class OllamaAgent:
                 if func_validate(curr_gpt_response):
                     return curr_gpt_response
             except:
-                pass
+                continue
         return fail_safe
-
 
     def ollama_request(self,prompt):
         self.temp_sleep()
-        data = {
-            "model": self.model,
-            "prompt": prompt,
-            "stream": False
+
+        messages = [
+            {"role": "user", "content": prompt}
+        ]
+
+        text = self.tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+        model_inputs = self.tokenizer([text], return_tensors="pt").to(device)
+
+        generated_ids = self.model.generate(
+            **model_inputs,
+            max_new_tokens=512,
+        )
+        generated_ids = [
+            output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+        ]
+
+        response = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+        x = {
+            "model": "qwen2.5moda",
+            "response": f'{response}',
         }
-        # 发送 POST 请求
-        response = requests.post(self.baseurl+"/generate", json=data)
-        # 检查响应状态码
-        if response.status_code == 200:
-            # 获取生成的文本
-            generated_text = response
-            return generated_text.text
-        else:
-            print(f"Error: {response.status_code}")
-            print(response.text)
+
+        x_serialized = json.dumps(x, ensure_ascii=False)
+        return x_serialized
+
 
 
     @staticmethod
@@ -83,7 +104,3 @@ class OllamaAgent:
         if "<commentblockmarker>###</commentblockmarker>" in prompt:
             prompt = prompt.split("<commentblockmarker>###</commentblockmarker>")[1]
         return prompt.strip()
-
-
-
-

@@ -1,19 +1,22 @@
 import json
+import os
 import time
-import requests
+from openai import OpenAI
 import warnings
-
-
-
 warnings.filterwarnings('ignore')
 import sys
 sys.path.append('../')
 
-class OllamaAgent:
-    def __init__(self, model,baseurl,user_id):
-        self.model = model
-        self.baseurl = baseurl
-        self.user_id = user_id
+os.environ['DASHSCOPE_API_KEY'] = 'sk-xxx'
+
+class QwenTurboAgent:
+    def __init__(self):
+        self.client = OpenAI(
+            # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        )
+
 
     def temp_sleep(self,seconds=0.1):
         time.sleep(seconds)
@@ -23,7 +26,7 @@ class OllamaAgent:
         prompt += f"Output the response to the prompt above in json. {special_instruction}\n"
         prompt += "Example output json:\n"
         prompt += '{"output": "' + str(example_output) + '"}'
-
+        # print("prompt",prompt)
         for i in range(repeat):
             # print(f"repeat:{i}")
             try:
@@ -33,27 +36,30 @@ class OllamaAgent:
                 if func_validate(curr_gpt_response):
                     return curr_gpt_response
             except:
-                pass
+                continue
         return fail_safe
-
 
     def ollama_request(self,prompt):
         self.temp_sleep()
-        data = {
-            "model": self.model,
-            "prompt": prompt,
-            "stream": False
+
+        completion = self.client.chat.completions.create(
+            model="qwen-plus",  # 模型列表：https://help.aliyun.com/zh/model-studio/getting-started/models
+            messages=[
+                {'role': 'user', 'content': prompt}],
+        )
+        response = completion.model_dump_json()
+        # print(response,1)
+        response = json.loads(response)['choices'][0]['message']['content']
+        # print(response, 2)
+        x = {
+            "model": "qwen2.5moda",
+            "response": f'{response}',
         }
-        # 发送 POST 请求
-        response = requests.post(self.baseurl+"/generate", json=data)
-        # 检查响应状态码
-        if response.status_code == 200:
-            # 获取生成的文本
-            generated_text = response
-            return generated_text.text
-        else:
-            print(f"Error: {response.status_code}")
-            print(response.text)
+
+        x_serialized = json.dumps(x, ensure_ascii=False)
+
+        return x_serialized
+
 
 
     @staticmethod
@@ -83,7 +89,6 @@ class OllamaAgent:
         if "<commentblockmarker>###</commentblockmarker>" in prompt:
             prompt = prompt.split("<commentblockmarker>###</commentblockmarker>")[1]
         return prompt.strip()
-
 
 
 
