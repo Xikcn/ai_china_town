@@ -1,5 +1,6 @@
 import math
 import random
+import time
 from datetime import datetime, timedelta
 import gradio as gr
 import numpy as np
@@ -27,6 +28,7 @@ def send_move_command(ip, port, object_positions):
 
         # 关闭连接
         client.close()
+        time.sleep(3)
     except Exception as e:
         print(f"Error: {e}")
 
@@ -42,6 +44,27 @@ def send_speak_command(ip, port, object_id, message):
 
         # 构造说话命令
         command = f"SPEAK:{object_id}:{message}"
+        client.sendall(command.encode('utf-8'))
+        print(f"Sent: {command}")
+        time.sleep(3)
+        # 关闭连接
+        client.close()
+    except Exception as e:
+        print(f"Error: {e}")
+
+def send_update_ui_command(ip, port, element_id, new_text):
+    """
+    发送UI文本更新命令到Unity。
+    element_id: UI元素的索引
+    new_text: 更新后的文本内容
+    """
+    try:
+        # 创建 socket 客户端
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect((ip, port))
+
+        # 构造更新UI文本命令
+        command = f"UPDATE_UI:{element_id}:{new_text}"
         client.sendall(command.encode('utf-8'))
         print(f"Sent: {command}")
 
@@ -338,7 +361,7 @@ def simulate_town_simulation(steps, min_per_step):
     agent3.goto_scene("小王家")
     step = 0
     now_time = START_TIME
-
+    send_update_ui_command(unity_ip, unity_port, 0, f'当前时间：{now_time}')
     for i in range(steps):
         output_gradio.append(f'第 {i+1} 个 step'.center(150,'-'))
         len_tile = len(f'第 {i + 1} 个 step'.center(150, '-'))
@@ -346,6 +369,7 @@ def simulate_town_simulation(steps, min_per_step):
             weekday_1 = get_weekday(START_TIME)
             format_time = format_date_time(START_TIME)
             output_gradio.append(f'当前时间：{format_time}({weekday_1})')
+
             for i in agents:
                 if i.memory != "":
                     # print(i.name, i.memory)
@@ -357,8 +381,9 @@ def simulate_town_simulation(steps, min_per_step):
                 i.schedule_time = update_schedule(i.wake, i.schedule[1:])
                 i.schedule_time = modify_schedule(i.schedule_time,f'{now_time[:10]}-{weekday_1}',i.memory,i.wake)
                 print("i.schedule_time",i.schedule_time)
-                i.curr_action = "睡觉"
-                i.last_action = "睡觉"
+                if step == 0:
+                    i.curr_action = "睡觉"
+                    i.last_action = "睡觉"
                 # TODO
                 send_speak_command(unity_ip, unity_port, int(agents_name.index(i.name)), i.curr_action)
                 output_gradio.append(f'{i.name}当前活动:{i.curr_action}(😴💤)---所在地点({i.home})')
@@ -366,6 +391,7 @@ def simulate_town_simulation(steps, min_per_step):
             weekday_2 = get_weekday(now_time)
             format_time = format_date_time(now_time)
             output_gradio.append(f'当前时间：{format_time}({weekday_2})')
+            send_update_ui_command(unity_ip, unity_port, 0, f'当前时间：{format_time}({weekday_2})')
             for i in agents:
                 if compare_times(now_time[-5:], i.wake):
                     i.curr_action = "睡觉"
