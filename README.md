@@ -1,5 +1,3 @@
-
-https://github.com/user-attachments/assets/8eac7f69-2944-40c7-a40c-5e2f41435def
 # AI中国小镇（ollama本地部署版）
 
 ## 使用方法
@@ -18,9 +16,7 @@ https://github.com/user-attachments/assets/8eac7f69-2944-40c7-a40c-5e2f41435def
 <a href="https://github.com/xkj0127/ai_twon_unity.git">unity项目（大学生不会unity写着玩的，望海涵）</a>
 
 
-
 https://github.com/user-attachments/assets/35cedfd2-9c26-4cb7-a4c7-333c26a7e6dd
-
 
 
 
