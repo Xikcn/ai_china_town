@@ -13,6 +13,15 @@
 ##### unity脚本参考
     unity空物体挂载脚本 /readme_img/SocketServer.cs
 
+<a href="https://github.com/xkj0127/ai_twon_unity.git">unity项目（大学生不会unity写着玩的，望海涵）</a>
+
+<video width="640" height="360" controls>
+  <source src="readme_img/unity_test.mp4" type="video/mp4">
+  您的浏览器不支持 video 标签。
+</video>
+
+
+
 
 ###  修改任务资料
 直接修改agents文件夹下对应人物文件夹下1.txt文件即可
@@ -29,6 +38,8 @@
 ![image](./readme_img/code2.png "代码2")
 
 ![image](./readme_img/ollama.png "ollama")
+
+![image](./readme_img/unity.png "unity")
 
 #### vllm操作
     ```bash
