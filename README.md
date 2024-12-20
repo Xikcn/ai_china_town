@@ -1,5 +1,7 @@
 # AI中国小镇（ollama本地部署版）
 
+###### 大学生自己写着玩的
+
 ## 使用方法
 #### 命令行方式使用
     python cmd_game_easy.py     
