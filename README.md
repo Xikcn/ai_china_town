@@ -18,7 +18,11 @@
 <a href="https://github.com/xkj0127/ai_twon_unity.git">unity项目（大学生不会unity写着玩的，望海涵）</a>
 
 
-https://github.com/user-attachments/assets/35cedfd2-9c26-4cb7-a4c7-333c26a7e6dd
+
+
+https://github.com/user-attachments/assets/2a79d312-958c-4d48-a0c7-f7c541590153
+
+
 
 
 
