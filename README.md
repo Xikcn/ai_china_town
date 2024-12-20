@@ -15,9 +15,8 @@
 
 <a href="https://github.com/xkj0127/ai_twon_unity.git">unity项目（大学生不会unity写着玩的，望海涵）</a>
 
-<video src="./readme_img/unity_test.mp4" autoplay="true" controls="controls" width="800" height="600">
-</video>
 
+https://github.com/langgenius/dify/assets/13230914/356df23e-1604-483d-80a6-9517ece318aa
 
 
 ###  修改任务资料
