@@ -38,26 +38,9 @@ https://github.com/user-attachments/assets/35cedfd2-9c26-4cb7-a4c7-333c26a7e6dd
 
 ![image](./readme_img/unity.png "unity")
 
-#### vllm操作
-    ```bash
-    python -m vllm.entrypoints.openai.api_server --model /home/xik/models/qwen/qwen2-0___5b --port 8000 --host 172.23.161.199 --tensor-parallel-size 1
-    ```
-
-    ```python
-    curl http://localhost:8000/v1/chat/completions -H "Content-Type: application/json" -d '{
-    "model": "/home/xik/models/qwen/qwen2-0___5b",
-    "messages": [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "天空为什么是蓝色的？"}
-    ],
-    "temperature": 0.7,
-    "top_p": 0.8,
-    "repetition_penalty": 1.05,
-    "max_tokens": 512
-    }'
-    ```
-
-### 源代码的LLM生成函数用法
+### 原项目链接
+https://github.com/joonspk-research/generative_agents
+### 原项目源代码的LLM生成函数用法
 1. 得到醒来的时间  
    1. run_gpt_prompt_wake_up_hour 
    2. persona/prompt_template/v2/daily_planning_v6.txt
