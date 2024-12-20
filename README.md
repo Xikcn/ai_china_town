@@ -15,11 +15,8 @@
 
 <a href="https://github.com/xkj0127/ai_twon_unity.git">unity项目（大学生不会unity写着玩的，望海涵）</a>
 
-<video width="640" height="360" controls>
-  <source src="readme_img/unity_test.mp4" type="video/mp4">
-  您的浏览器不支持 video 标签。
+<video src="./readme_img/unity_test.mp4" autoplay="true" controls="controls" width="800" height="600">
 </video>
-
 
 
 
