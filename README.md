@@ -7,6 +7,13 @@
 #### gradio方式使用（推荐）
     python main.py    
 
+#### 驱动unity人物行动（推荐）
+    python unity_socket_main.py
+
+##### unity脚本参考
+    unity空物体挂载脚本 /readme_img/SocketServer.cs
+
+
 ###  修改任务资料
 直接修改agents文件夹下对应人物文件夹下1.txt文件即可
 

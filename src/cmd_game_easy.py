@@ -306,7 +306,7 @@ if __name__ == '__main__':
                         # 反思聊天变成记忆存储
                     # 行动完成
             chat_part = DBSCAN_chat(agents)
-            if chat_part  == None:
+            if chat_part is None:
                 pass
             else:
                 print(f'{chat_part[0].name}和{chat_part[1].name}在{chat_part[1].curr_place}相遇,他们在进行聊天')
@@ -329,7 +329,8 @@ if __name__ == '__main__':
                     chat_part[1].name,
                     f"{chat_part[0].name}正在{chat_part[0].curr_action},{chat_part[1].name}正在{chat_part[1].curr_action}",
                     chat_part[0].memory,
-                    chat_part[1].memory)
+                    chat_part[1].memory,
+                    f'{now_time[:10]}-{weekday_2}')
                 print(f'聊天内容:{chat_result}')
                 chat_part[0].memory = chat_result
                 chat_part[1].memory = chat_result
