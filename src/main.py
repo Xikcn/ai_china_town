@@ -174,6 +174,7 @@ def compare_times(time_str1, time_str2, time_format="%H-%M"):
 
 # 日程安排转为开始时间
 #  TODO 时间有问题，睡觉时间,传入参数[1:]即可解决
+# FIXME 对于能力弱的大模型，生成格式化时间错误，可以 wake_up_time_str = wake_up_time_str[0] +"-"+ wake_up_time_str[1:]
 def update_schedule(wake_up_time_str, schedule):
     # 将字符串格式的时间转换为datetime对象
     wake_up_time = datetime.strptime(wake_up_time_str, '%H-%M')
