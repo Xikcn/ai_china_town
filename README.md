@@ -3,11 +3,11 @@
 ###### 大学生自己写着玩的
 
 ## 使用方法
-#### 命令行方式使用
-    python cmd_game_easy.py     
-
 #### gradio方式使用（推荐）
     python main.py    
+
+#### 命令行方式使用（不推荐，不维护）
+    python cmd_game_easy.py   
 
 #### 驱动unity人物行动（推荐）
     python unity_socket_main.py
