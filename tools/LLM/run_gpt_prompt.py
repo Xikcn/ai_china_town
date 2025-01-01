@@ -201,10 +201,10 @@ def modify_schedule(old_schedule,now_time,memory,wake_time):
 
     generate_prompt = OllamaAgent.generate_prompt(
         [old_schedule,now_time,memory,wake_time],
-        r"D:\Python_workspace\rag_qwen\tools\LLM\prompt_template\细化每日安排时间表.txt")
+        r"./tools/LLM/prompt_template/细化每日安排时间表.txt")
     output = ollama_agent.ollama_safe_generate_response(generate_prompt, "", "你不需要调整，只需要给我输出一个最终的结果，我需要一个标准的数组格式", 10,
                                                         __func_validate, __func_clean_up)
-    print("modify_schedule",output)
+    # print("modify_schedule",output)
     if type(output) == str:
         if "json" in output:
             output = output.replace("```", "").split("json")[1][1:]
@@ -241,13 +241,3 @@ def summarize(memory,now_time,name):
     return output
 
 
-if __name__ == '__main__':
-    os.chdir(r'D:\Python_workspace\rag_qwen')
-    api_url = "http://127.0.0.1:11434/api"
-    ollama_agent = OllamaAgent("qwen2.5:14b", api_url, "agent_chat")
-    can_go_place = ['医院', '咖啡店', '蜜雪冰城', '学校', '小芳家', '火锅店', '绿道', '小明家', '小王家', '肯德基',
-                    '乡村基', '健身房', '电影院', '商场', '海边']
-
-    x = summarize([['小明', '明天去肯德基吗'], ['小芳', '好的，每天上午十一点在肯德基集合']],'2024-11-19-星期二','小明')
-    print(x)
-    print(type(x))

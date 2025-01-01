@@ -268,11 +268,13 @@ def simulate_town_simulation(steps, min_per_step):
 
     for i in range(steps):
         output_gradio.append(f'第 {i+1} 个 step'.center(150,'-'))
+        yield "\n".join(output_gradio)
         len_tile = len(f'第 {i + 1} 个 step'.center(150, '-'))
         if step % int((1440 / min_per_step)) == 0:
             weekday_1 = get_weekday(START_TIME)
             format_time = format_date_time(START_TIME)
             output_gradio.append(f'当前时间：{format_time}({weekday_1})')
+            yield "\n".join(output_gradio)
             for i in agents:
                 if i.memory != "":
                     # print(i.name, i.memory)
@@ -280,17 +282,21 @@ def simulate_town_simulation(steps, min_per_step):
                 i.goto_scene(i.home)
                 i.schedule = run_gpt_prompt_generate_hourly_schedule(i.ziliao[6], f'{now_time[:10]}-{weekday_1}')
                 i.wake = run_gpt_prompt_wake_up_hour(i.ziliao[6], now_time[:10]+weekday_1, i.schedule[1:])
-                print("i.wake", i.wake)
+                # print("i.wake", i.wake)
+                if "-" not in i.wake:
+                    i.wake = i.wake[0] + "-" + i.wake[1:]
                 i.schedule_time = update_schedule(i.wake, i.schedule[1:])
                 i.schedule_time = modify_schedule(i.schedule_time,f'{now_time[:10]}-{weekday_1}',i.memory,i.wake)
-                print("i.schedule_time",i.schedule_time)
+                # print("i.schedule_time",i.schedule_time)
                 i.curr_action = "睡觉"
                 i.last_action = "睡觉"
                 output_gradio.append(f'{i.name}当前活动:{i.curr_action}(😴💤)---所在地点({i.home})')
+                yield "\n".join(output_gradio)
         else:
             weekday_2 = get_weekday(now_time)
             format_time = format_date_time(now_time)
             output_gradio.append(f'当前时间：{format_time}({weekday_2})')
+            yield "\n".join(output_gradio)
             for i in agents:
                 if compare_times(now_time[-5:], i.wake):
                     i.curr_action = "睡觉"
@@ -312,6 +318,7 @@ def simulate_town_simulation(steps, min_per_step):
                     else:
                         output_gradio.append(
                             f'{i.name}当前活动:{i.curr_action}({i.curr_action_pronunciatio})---所在地点({i.curr_place})')
+                yield "\n".join(output_gradio)
             # 感知周围其他角色决策行动
                 # 主视角查看全地图，获取角色坐标
                     # 触发聊天
@@ -323,6 +330,7 @@ def simulate_town_simulation(steps, min_per_step):
             else:
                 output_gradio.append(
                     f'{chat_part[0].name}和{chat_part[1].name}在{chat_part[1].curr_place}相遇,他们在进行聊天')
+                yield "\n".join(output_gradio)
                 chat_part[0].curr_action = "聊天"
                 chat_part[1].curr_action = "聊天"
 
@@ -336,6 +344,7 @@ def simulate_town_simulation(steps, min_per_step):
                         f'{chat_part[0].name}当前活动:{chat_part[0].curr_action}---所在地点({chat_part[0].curr_place}和{chat_part[1].curr_place}旁)')
                     output_gradio.append(
                         f'{chat_part[1].name}当前活动:{chat_part[1].curr_action}---所在地点({chat_part[0].curr_place}和{chat_part[1].curr_place}旁)')
+                yield "\n".join(output_gradio)
                 chat_result = double_agents_chat(
                     chat_part[0].curr_place,
                     chat_part[0].name,
@@ -345,6 +354,7 @@ def simulate_town_simulation(steps, min_per_step):
                     chat_part[1].memory,
                     f'{now_time[:10]}-{weekday_2}')
                 output_gradio.append(f'聊天内容:{chat_result}')
+                yield "\n".join(output_gradio)
                 # print(343, type(chat_result))
                 # print(344, type( chat_part[0].memory))
                 # print(345, chat_result)
