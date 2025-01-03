@@ -24,8 +24,10 @@ class QwenTurboAgent:
     def ollama_safe_generate_response(self,prompt,example_output,special_instruction,repeat=3,func_validate=None, func_clean_up=None,fail_safe=None):
         prompt = '"""\n' + prompt + '\n"""\n'
         prompt += f"Output the response to the prompt above in json. {special_instruction}\n"
-        prompt += "Example output json:\n"
-        prompt += '{"output": "' + str(example_output) + '"}'
+        prompt += "Example output json\n"
+        prompt += "```json\n"
+        prompt += '{"output": "' + str(example_output) + '"}\n'
+        prompt += "json"
         # print("prompt",prompt)
         for i in range(repeat):
             # print(f"repeat:{i}")

@@ -24,6 +24,10 @@ ollama_agent = OllamaAgent("qwen2.5:14b", api_url, "agent_chat")
 # ollama_agent = QwenTurboAgent()
 
 
+#方式四 deepseek-v3
+
+# from tools.LLM.deepseek_agent import DeepSeekAgent
+# ollama_agent = deepsk = DeepSeekAgent()
 
 
 
@@ -100,18 +104,24 @@ def run_gpt_prompt_wake_up_hour(persona,now_time,hourly_schedule):
 
 # 行动转表情
 def run_gpt_prompt_pronunciatio(Action_dec):
-    def __chat_func_clean_up(gpt_response):  
+    def __chat_func_clean_up(gpt_response):
         cr = gpt_response.strip()
         if len(cr) > 3:
-            cr = cr[:3]
+            cr = cr[:2]
         if len(cr) == 0:
             cr = '😴💤'
         return cr
     def __chat_func_validate(gpt_response):  
         try:
-            gpt_response = json.loads(gpt_response)["output"]
-            __chat_func_clean_up(gpt_response)
+            if "output" in gpt_response:
+                pattern = r'"output"\s*:\s*"([^"]+)"'
+                match = re.search(pattern, gpt_response)
+                output_value = match.group(1)
+                __chat_func_clean_up(output_value)
+            else:
+                return False
         except:
+            print("__chat_func_validate exception")
             return False
         return True
     example_output = "🛁🧖‍♀️"  ########
@@ -119,15 +129,18 @@ def run_gpt_prompt_pronunciatio(Action_dec):
     generate_prompt = OllamaAgent.generate_prompt(
         [Action_dec],
         r"./tools/LLM/prompt_template/行为转为图标显示.txt")
-    output = ollama_agent.ollama_safe_generate_response(generate_prompt, example_output, special_instruction, 5,__chat_func_validate,__chat_func_clean_up,'{"output":"🧘️"}')
-    return json.loads(output)['output']
+    output = ollama_agent.ollama_safe_generate_response(generate_prompt, example_output, special_instruction, 5,__chat_func_validate,__chat_func_clean_up,'{"output":"😴💤"}')
+    pattern = r'"output"\s*:\s*"([^"]+)"'
+    match = re.search(pattern, output)
+    output = match.group(1)
+    return output
 
 
 # 两个智能体间的对话
 def double_agents_chat(maze,agent1_name,agent2_name,curr_context,init_summ_idea,target_summ_idea,now_time):
     def __chat_func_clean_up(gpt_response):
         try:
-            output_value = json.loads(gpt_response)["output"]
+            output_value = gpt_response
         except:
             output_value = ""
         return output_value
@@ -135,8 +148,14 @@ def double_agents_chat(maze,agent1_name,agent2_name,curr_context,init_summ_idea,
     def __chat_func_validate(gpt_response):
         # print(type(gpt_response))
         try:
-            output_value = json.loads(gpt_response)["output"]
-            __chat_func_clean_up(output_value)
+            if "json" in gpt_response:
+                gpt_response = gpt_response.replace("```", "").split("json")[1][1:]
+                gpt_response = json.loads(gpt_response.strip('\n'))['output']
+                __chat_func_clean_up(gpt_response)
+            else:
+                pattern = r'"output"\s*:\s*"([^"]+)"'
+                match = re.search(pattern, gpt_response)
+                __chat_func_clean_up(match)
         except:
             return False
         return True
@@ -148,8 +167,16 @@ def double_agents_chat(maze,agent1_name,agent2_name,curr_context,init_summ_idea,
     special_instruction = '输出应该是一个列表类型，其中内部列表的形式为[“<名字>”，“<话语>”]。'
 
     output = ollama_agent.ollama_safe_generate_response(generate_prompt, example_output, special_instruction, 5,__chat_func_validate,__chat_func_clean_up,'''{"output":"[['小明', '明天去肯德基吗'], ['小芳', '好的，每天上午十一点在肯德基集合']]"}''')
-    output = json.loads(output)["output"]
-    return output
+    if "json" in output:
+        output = output.replace("```", "").split("json")[1][1:]
+        output = json.loads(output.strip('\n'))['output']
+        return output
+
+    else:
+        pattern = r'"output"\s*:\s*"([^"]+)"'
+        match = re.search(pattern, output)
+        output = match.group(1)
+        return output
 
 
 # 判断做这件事情需要去哪个地方
@@ -185,7 +212,7 @@ def go_map(agent_name, home , curr_place, can_go, curr_task):
 
 
 # 思考改变日程安排
-def modify_schedule(old_schedule,now_time,memory,wake_time):
+def modify_schedule(old_schedule,now_time,memory,wake_time,role_xg):
     def __func_clean_up(gpt_response):
         cr = gpt_response
         return cr
@@ -194,25 +221,32 @@ def modify_schedule(old_schedule,now_time,memory,wake_time):
         try:
             gpt_response = gpt_response.replace("```","").split("json")[1][1:]
             gpt_response = json.loads(gpt_response.strip('\n'))['output']
+            # qwen2.5-7b回答少一个]导致无法对象化为列表
+            if type(gpt_response) == str:
+                gpt_response = gpt_response.replace("'", '"')
+                gpt_response_test = json.loads(gpt_response)
             __func_clean_up(gpt_response)
         except:
             return False
         return True
 
     generate_prompt = OllamaAgent.generate_prompt(
-        [old_schedule,now_time,memory,wake_time],
+        [old_schedule,now_time,memory,wake_time,role_xg],
         r"./tools/LLM/prompt_template/细化每日安排时间表.txt")
     output = ollama_agent.ollama_safe_generate_response(generate_prompt, "", "你不需要调整，只需要给我输出一个最终的结果，我需要一个标准的数组格式", 10,
                                                         __func_validate, __func_clean_up)
     # print("modify_schedule",output)
-    if type(output) == str:
+    if type(output) in [str]:
         if "json" in output:
             output = output.replace("```", "").split("json")[1][1:]
             output = json.loads(output.strip('\n'))['output']
-            return output
+            if type(output) == str:
+                output = output.replace("'", '"')
+                output = json.loads(output)
 
+            return output
         else:
-            # print(output)
+            output = json.loads(output)
             return output
     else:
         return output

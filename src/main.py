@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import gradio as gr
 import numpy as np
 from sklearn.cluster import DBSCAN
+
 from tools.LLM.run_gpt_prompt import *
 import os
 
@@ -100,7 +101,7 @@ def DBSCAN_chat(agents):
     # 如果没有符合条件的聚类，返回 None
     if not filtered_clusters:
         return None
-    if random.random() < 0.8:
+    if random.random() < 0.75:
         selected_cluster = random.choice(filtered_clusters)
         return [i[1] for i in selected_cluster]
     else:
@@ -116,21 +117,20 @@ def DBSCAN_chat(agents):
         这几天有什么重要的事情
 '''
 
-# 时间
-START_TIME =  "2024-11-13-06-00"
+
 
 # 计算时间的表示的函数
 def get_now_time(oldtime,step_num,min_per_step):
     def format_time(dt):
         return dt.strftime("%Y-%m-%d-%H-%M")
-    def calculate_new_time(oldtime, step_num):
+    def calculate_new_time(oldtime, step_num,min_per_step):
         # 将字符串转换为 datetime 对象
         start_time = datetime.strptime(oldtime, "%Y-%m-%d-%H-%M")
         # 计算新的时间
         new_time = start_time + timedelta(minutes=min_per_step * step_num)
         # 将新的时间格式化为字符串
         return format_time(new_time)
-    return calculate_new_time(oldtime, step_num)
+    return calculate_new_time(oldtime, step_num, min_per_step)
 
 # 获取时间对于的星期
 def get_weekday(nowtime):
@@ -164,12 +164,13 @@ def compare_times(time_str1, time_str2, time_format="%H-%M"):
     time1 = datetime.strptime(time_str1, time_format)
     time2 = datetime.strptime(time_str2, time_format)
     # 比较两个时间
+    # 当前, 醒来
     if time1 < time2:
         return True
     elif time1 > time2:
         return False
     else:
-        return True
+        return False
 
 
 # 日程安排转为开始时间
@@ -190,7 +191,7 @@ def update_schedule(wake_up_time_str, schedule):
 
 # 确定当前时间agent开展的活动
 def find_current_activity(current_time_str, schedule):
-    print("now_time[-5:]",current_time_str)
+    # print("now_time[-5:]",current_time_str)
     # 将当前时间字符串转换为datetime对象
     current_time = datetime.strptime(current_time_str, '%H-%M')
     # 遍历日程安排列表，找到当前时间对应的日程安排项
@@ -252,7 +253,6 @@ def generate_tabs(target_files):
 # 模拟主循环逻辑
 def simulate_town_simulation(steps, min_per_step):
     output_gradio = []
-
     agent1 = agent_v("小明", MAP)
     agent2 = agent_v("小芳", MAP)
     agent3 = agent_v("小王", MAP)
@@ -264,15 +264,17 @@ def simulate_town_simulation(steps, min_per_step):
     agent2.goto_scene("小芳家")
     agent3.goto_scene("小王家")
     step = 0
+    # 时间
+    START_TIME = "2025-01-04-03-00"
     now_time = START_TIME
 
     for i in range(steps):
-        output_gradio.append(f'第 {i+1} 个 step'.center(150,'-'))
+        output_gradio.append(f'第 {i+1} 个 step'.center(140,'-'))
         yield "\n".join(output_gradio)
-        len_tile = len(f'第 {i + 1} 个 step'.center(150, '-'))
         if step % int((1440 / min_per_step)) == 0:
-            weekday_1 = get_weekday(START_TIME)
-            format_time = format_date_time(START_TIME)
+            weekday_1 = get_weekday(now_time)
+            format_time = format_date_time(now_time)
+            # print(f'当前时间：{format_time}({weekday_1})')
             output_gradio.append(f'当前时间：{format_time}({weekday_1})')
             yield "\n".join(output_gradio)
             for i in agents:
@@ -283,13 +285,27 @@ def simulate_town_simulation(steps, min_per_step):
                 i.schedule = run_gpt_prompt_generate_hourly_schedule(i.ziliao[6], f'{now_time[:10]}-{weekday_1}')
                 i.wake = run_gpt_prompt_wake_up_hour(i.ziliao[6], now_time[:10]+weekday_1, i.schedule[1:])
                 # print("i.wake", i.wake)
+
+                # 解决deepseek-v3生成的问题
+                if ":" in i.wake:
+                    # print(i.wake,'i.wake = i.wake.replace(":","-")')
+                    i.wake = i.wake.replace(":","-")
+                # 解决qwen2.5-3b
                 if "-" not in i.wake:
-                    i.wake = i.wake[0] + "-" + i.wake[1:]
+                    # print(i.wake,'elif "-" not in i.wake:')
+                    if len(i.wake) == 2:
+                        i.wake = "0"+i.wake[0] + "-" + "0"+i.wake[1:]
+                    elif len(i.wake) == 3:
+                        i.wake = "0" + i.wake[0] + "-" + i.wake[1:]
+                    elif len(i.wake) == 4:
+                        i.wake = "0" + i.wake[:2] + "-" + i.wake[2:]
                 i.schedule_time = update_schedule(i.wake, i.schedule[1:])
-                i.schedule_time = modify_schedule(i.schedule_time,f'{now_time[:10]}-{weekday_1}',i.memory,i.wake)
-                # print("i.schedule_time",i.schedule_time)
-                i.curr_action = "睡觉"
-                i.last_action = "睡觉"
+                i.schedule_time = modify_schedule(i.schedule_time,f'{now_time[:10]}-{weekday_1}',i.memory,i.wake,i.ziliao[6])
+                # print("i.schedule_time",i.schedule_time,type(i.schedule_time))
+                if step == 0:
+                    i.curr_action = "睡觉"
+                    i.last_action = "睡觉"
+
                 output_gradio.append(f'{i.name}当前活动:{i.curr_action}(😴💤)---所在地点({i.home})')
                 yield "\n".join(output_gradio)
         else:
@@ -304,10 +320,12 @@ def simulate_town_simulation(steps, min_per_step):
                     i.curr_place = i.home
                     output_gradio.append(f'{i.name}当前活动:{i.curr_action}(😴💤)---所在地点({i.curr_place})')
                 else:
+                    # 检查 i.schedule_time 是否为列表类型的方式
                     if type(i.schedule_time) in [list]:
                         i.curr_action = find_current_activity(now_time[-5:], i.schedule_time)[0]
+                        # print(i.curr_action)
                     else:
-                        pass
+                        print('ERROR : i.schedule_time不是列表')
                     if i.last_action != i.curr_action:
                         i.curr_action_pronunciatio = run_gpt_prompt_pronunciatio(i.curr_action)[:2]
                         i.last_action = i.curr_action
@@ -318,6 +336,7 @@ def simulate_town_simulation(steps, min_per_step):
                     else:
                         output_gradio.append(
                             f'{i.name}当前活动:{i.curr_action}({i.curr_action_pronunciatio})---所在地点({i.curr_place})')
+
                 yield "\n".join(output_gradio)
             # 感知周围其他角色决策行动
                 # 主视角查看全地图，获取角色坐标
@@ -361,15 +380,12 @@ def simulate_town_simulation(steps, min_per_step):
                 chat_part[0].memory += json.dumps(chat_result, ensure_ascii=False)
                 chat_part[1].memory += json.dumps(chat_result, ensure_ascii=False)
 
-
-
-
         step += 1
         now_time = get_now_time(now_time, 1,min_per_step)
         if step == steps:
-            output_gradio.append("已到最大执行步数，结束".center(130, '-'))
-        # 在每个循环结束时返回结果
-        yield "\n".join(output_gradio)
+            output_gradio.append("已到最大执行步数，结束".center(120, '-'))
+            # 在每个循环结束时返回结果
+            yield "\n".join(output_gradio)
 
 
 
