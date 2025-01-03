@@ -56,3 +56,4 @@ https://github.com/joonspk-research/generative_agents
 3. 调整提取json结构内容方式
 4. 修改提示词（未完成3b模型适配，3b模型会出现生成日程表时间交错且时间安排不当）
 5. 修复时间日期不改变的问题
+6. 只修改了 main.py 的逻辑
