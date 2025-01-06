@@ -2,6 +2,9 @@
 
 ###### 大学生自己写着玩的
 
+## 项目体验
+https://modelscope.cn/studios/xkj1615242125/ai_china_town
+
 ## 使用方法
 #### gradio方式使用（推荐）
     python main.py    
@@ -16,8 +19,6 @@
     unity空物体挂载脚本 /readme_img/SocketServer.cs
 
 <a href="https://github.com/xkj0127/ai_twon_unity.git">unity项目（大学生不会unity写着玩的，望海涵）</a>
-
-
 
 
 https://github.com/user-attachments/assets/2a79d312-958c-4d48-a0c7-f7c541590153

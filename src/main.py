@@ -4,11 +4,8 @@ from datetime import datetime, timedelta
 import gradio as gr
 import numpy as np
 from sklearn.cluster import DBSCAN
-
 from tools.LLM.run_gpt_prompt import *
 import os
-
-# print(os.getcwd())
 
 
 # 小镇基本设施地图
@@ -48,12 +45,20 @@ class agent_v:
         self.schedule_time = []
         self.last_action = ""
         self.memory = ""
+        self.talk_arr = ""
         self.wake = ""
         self.curr_action = ""
         self.curr_action_pronunciatio  = ""
         self.ziliao = open(f"./agents/{self.name}/1.txt",encoding="utf-8").readlines()
 
-    def getpositon(self):
+    def agent_init(self,home):
+        agent = agent_v(self.name, MAP)
+        agent.home = home
+        agent.goto_scene(agent.home)
+        return agent
+
+
+    def get_position(self):
         return self.position
 
 
@@ -84,7 +89,7 @@ def DBSCAN_chat(agents):
     points_list =  []
     agent_list = []
     for agent in agents:
-        points_list.append(agent.getpositon())
+        points_list.append(agent.get_position())
         agent_list.append(agent)
     points_array = np.array(points_list)
     dbscan = DBSCAN(eps=1.5, min_samples=1)
@@ -146,16 +151,12 @@ def get_weekday(nowtime):
 def format_date_time(date_str):
     # 定义输入日期时间的格式
     input_format = '%Y-%m-%d-%H-%M'
-
     # 解析日期时间字符串
     dt = datetime.strptime(date_str, input_format)
-
     # 定义输出日期时间的格式
     output_format = '%Y年%m月%d日%H点%M分'
-
     # 格式化日期时间字符串
     formatted_date = dt.strftime(output_format)
-
     return formatted_date
 
 # 比较两个时间谁更早
@@ -186,7 +187,6 @@ def update_schedule(wake_up_time_str, schedule):
     for activity, duration in schedule:
         updated_schedule.append([activity, current_time.strftime('%H-%M')])
         current_time += timedelta(minutes=duration)
-
     return updated_schedule
 
 # 确定当前时间agent开展的活动
@@ -242,7 +242,7 @@ def generate_tabs(target_files):
             textbox = gr.Textbox(
                 label=f"{folder_name}/{TARGET_FILENAME} 内容",
                 value=file_content,
-                lines=20,
+                lines=14,
                 interactive=True
             )
             save_button = gr.Button("保存")
@@ -250,22 +250,40 @@ def generate_tabs(target_files):
 
             save_button.click(save_callback, inputs=[textbox], outputs=save_status)
 
+
+# 通过星期几确定日期
+def weekday2START_TIME(weekday_dropdown):
+    weekdays = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期天"]
+    if weekday_dropdown == weekdays[0]:
+        result = "2024-11-18-03-00"
+    elif weekday_dropdown == weekdays[1]:
+        result = "2024-11-19-03-00"
+    elif weekday_dropdown == weekdays[2]:
+        result = "2024-11-20-03-00"
+    elif weekday_dropdown == weekdays[3]:
+        result = "2024-11-21-03-00"
+    elif weekday_dropdown == weekdays[4]:
+        result = "2024-11-22-03-00"
+    elif weekday_dropdown == weekdays[5]:
+        result = "2024-11-23-03-00"
+    elif weekday_dropdown == weekdays[6]:
+        result = "2024-11-24-03-00"
+    else:
+        result = "2024-11-18-03-00"
+    return result
+
 # 模拟主循环逻辑
-def simulate_town_simulation(steps, min_per_step):
+def simulate_town_simulation(steps, min_per_step,weekday_dropdown):
     output_gradio = []
-    agent1 = agent_v("小明", MAP)
-    agent2 = agent_v("小芳", MAP)
-    agent3 = agent_v("小王", MAP)
-    agent1.home = "小明家"
-    agent2.home = "小芳家"
-    agent3.home = "小王家"
+
+    agent1 = agent_v('小明', MAP).agent_init("小明家")
+    agent2 = agent_v('小芳', MAP).agent_init("小芳家")
+    agent3 = agent_v('小王', MAP).agent_init("小王家")
     agents = [agent1, agent2, agent3]
-    agent1.goto_scene("小明家")
-    agent2.goto_scene("小芳家")
-    agent3.goto_scene("小王家")
+
     step = 0
     # 时间
-    START_TIME = "2025-01-04-03-00"
+    START_TIME = weekday2START_TIME(weekday_dropdown)
     now_time = START_TIME
 
     for i in range(steps):
@@ -278,9 +296,9 @@ def simulate_town_simulation(steps, min_per_step):
             output_gradio.append(f'当前时间：{format_time}({weekday_1})')
             yield "\n".join(output_gradio)
             for i in agents:
-                if i.memory != "":
-                    # print(i.name, i.memory)
-                    i.memory = summarize(i.memory, f'{now_time[:10]}-{weekday_1}', i.name)
+                if i.talk_arr != "":
+                    # print(i.name, i.talk_arr)
+                    i.memory = summarize(i.talk_arr, f'{now_time[:10]}-{weekday_1}', i.name)
                 i.goto_scene(i.home)
                 i.schedule = run_gpt_prompt_generate_hourly_schedule(i.ziliao[6], f'{now_time[:10]}-{weekday_1}')
                 i.wake = run_gpt_prompt_wake_up_hour(i.ziliao[6], now_time[:10]+weekday_1, i.schedule[1:])
@@ -369,16 +387,18 @@ def simulate_town_simulation(steps, min_per_step):
                     chat_part[0].name,
                     chat_part[1].name,
                     f"{chat_part[0].name}正在{chat_part[0].curr_action},{chat_part[1].name}正在{chat_part[1].curr_action}",
-                    chat_part[0].memory,
-                    chat_part[1].memory,
+                    chat_part[0].talk_arr,
+                    chat_part[1].talk_arr,
                     f'{now_time[:10]}-{weekday_2}')
                 output_gradio.append(f'聊天内容:{chat_result}')
                 yield "\n".join(output_gradio)
                 # print(343, type(chat_result))
-                # print(344, type( chat_part[0].memory))
+                # print(344, type( chat_part[0].talk_arr))
                 # print(345, chat_result)
-                chat_part[0].memory += json.dumps(chat_result, ensure_ascii=False)
-                chat_part[1].memory += json.dumps(chat_result, ensure_ascii=False)
+                chat_part[0].talk_arr += json.dumps(chat_result, ensure_ascii=False)
+                chat_part[1].talk_arr += json.dumps(chat_result, ensure_ascii=False)
+
+
 
         step += 1
         now_time = get_now_time(now_time, 1,min_per_step)
@@ -395,13 +415,15 @@ def launch_gradio_interface():
         with gr.Row():
             with gr.Column():
                 gr.Markdown("### 小镇活动模拟")
+                # 星期选项
+                weekdays = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期天"]
+                weekday_dropdown = gr.Dropdown(weekdays, label="选择星期")
                 steps_input = gr.Number(value=60, label="模拟步数")
                 min_per_step_input = gr.Number(value=30, label="每步模拟分钟数")
                 simulation_output = gr.Textbox(label="模拟结果", interactive=False)
-
                 simulate_button = gr.Button("开始模拟")
                 simulate_button.click(simulate_town_simulation,
-                                      inputs=[steps_input, min_per_step_input],
+                                      inputs=[steps_input, min_per_step_input,weekday_dropdown],
                                       outputs=[simulation_output])
 
             with gr.Column():
